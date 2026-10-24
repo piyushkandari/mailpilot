@@ -26,3 +26,11 @@ graph TD
     J -->|Edit| I
     J -->|Approve| K[Gmail API: Send]
     J -->|Reject| L[Gmail API: Delete]
+
+## Screenshots
+
+### Pending Drafts Dashboard
+![Pending Drafts](assets/ui-list.png)
+
+### Review and Edit Draft
+![Review Draft](assets/ui-review.png)
