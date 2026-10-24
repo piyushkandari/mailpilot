@@ -1,0 +1,25 @@
+# Secrets
+.env
+credentials/
+token.json
+*.json
+!requirements.json  # keep this line only if you later add non-secret JSON
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env.local
+
+# OS
+.DS_Store
+# Local DB — contains email contents
+mail_pilot.db
+mail_pilot.db-wal
+mail_pilot.db-shm
+*.db
+*.db-journal
+
+data/
+!data/.gitkeep
