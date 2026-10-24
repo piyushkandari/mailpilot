@@ -68,8 +68,11 @@ CREATE TABLE IF NOT EXISTS drafts (
     gmail_draft_id  TEXT,
     created_at      TEXT NOT NULL,
     raw_response    TEXT,
+    status          TEXT DEFAULT 'pending', 
     PRIMARY KEY (message_id, prompt_version),
     FOREIGN KEY (message_id) REFERENCES messages(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_drafts_thread ON drafts(thread_id);
+
+

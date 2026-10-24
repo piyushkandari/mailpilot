@@ -93,3 +93,55 @@ def get_raw_message(service, message_id: str) -> dict:
             userId="me", id=message_id, format="full"
         ).execute()
     ))
+
+def send_draft(service, draft_id: str) -> dict:
+    """SEND an existing draft. 
+    
+    CRITICAL: This function must only be called after explicit human approval.
+    """
+    try:
+        sent_message = service.users().drafts().send(
+            userId="me",
+            body={"id": draft_id}
+        ).execute()
+        return sent_message
+    except HttpError as exc:
+        log.error("Failed to send draft %s: %s", draft_id, exc)
+        raise
+
+def update_draft(
+    service,
+    draft_id: str,
+    *,
+    thread_id: str,
+    to_addr: str,
+    subject: str,
+    body: str,
+) -> dict:
+    """Update an existing Gmail draft with new content.
+    
+    Gmail's update method replaces the entire raw message, so we rebuild it.
+    """
+    msg = EmailMessage()
+    msg["To"] = to_addr
+    msg["Subject"] = subject
+    msg.set_content(body)
+    
+    raw_bytes = msg.as_bytes()
+    encoded = base64.urlsafe_b64encode(raw_bytes).decode("ascii")
+    
+    draft_body = {
+        "message": {
+            "raw": encoded,
+            "threadId": thread_id,
+        }
+    }
+    
+    try:
+        updated = service.users().drafts().update(
+            userId="me", id=draft_id, body=draft_body
+        ).execute()
+        return updated
+    except HttpError as exc:
+        log.error("Failed to update draft %s: %s", draft_id, exc)
+        raise

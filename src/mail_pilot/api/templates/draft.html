@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review Draft</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
+        label { display: block; margin-top: 1rem; font-weight: bold; }
+        input[type="text"], textarea { width: 100%; padding: 0.5rem; font-family: inherit; }
+        textarea { height: 200px; resize: vertical; }
+        .actions { margin-top: 1.5rem; display: flex; gap: 1rem; }
+        button { padding: 0.5rem 1rem; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-send { background: #28a745; color: white; }
+        .btn-reject { background: #dc3545; color: white; }
+        .btn-save { background: #0366d6; color: white; }
+        .back { text-decoration: none; color: #666; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back">&larr; Back to list</a>
+    <h1>Review Draft</h1>
+    
+    <form method="post" action="/draft/{{ draft.gmail_draft_id }}/edit">
+        <label>Subject</label>
+        <input type="text" name="subject" value="{{ draft.subject }}" required>
+        
+        <label>Body</label>
+        <textarea name="body" required>{{ draft.body }}</textarea>
+        
+        <div class="actions">
+            <button type="submit" class="btn-save">Save Edits</button>
+        </div>
+    </form>
+
+    <hr style="margin: 2rem 0;">
+
+    <div class="actions">
+        <!-- Send Form -->
+        <form method="post" action="/draft/{{ draft.gmail_draft_id }}/send" onsubmit="return confirm('Are you sure you want to SEND this email?');">
+            <button type="submit" class="btn-send">Approve & Send</button>
+        </form>
+        
+        <!-- Reject Form -->
+        <form method="post" action="/draft/{{ draft.gmail_draft_id }}/reject" onsubmit="return confirm('Are you sure you want to REJECT this draft?');">
+            <button type="submit" class="btn-reject">Reject & Delete</button>
+        </form>
+    </div>
+</body>
+</html>

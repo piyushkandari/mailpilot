@@ -108,16 +108,23 @@ def save_classification(conn: sqlite3.Connection, message_id: str,
     conn.commit()
 
 
-def record_api_call(conn: sqlite3.Connection, *, model: str, kind: str,
-                    success: bool, error: str | None = None) -> None:
-    """Log one Gemini (or other) API call for budget accounting."""
+def record_api_call(
+    conn: sqlite3.Connection, 
+    *, 
+    model: str, 
+    kind: str,
+    success: bool, 
+    error: str | None = None,
+    latency_ms: int = 0,
+    total_tokens: int = 0
+) -> None:
+    """Log one API call for budget and telemetry."""
     conn.execute(
-        "INSERT INTO api_calls (called_at, model, kind, success, error) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (_now_iso(), model, kind, 1 if success else 0, error),
+        "INSERT INTO api_calls (called_at, model, kind, success, error, latency_ms, total_tokens) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (_now_iso(), model, kind, 1 if success else 0, error, latency_ms, total_tokens),
     )
     conn.commit()
-
 
 def calls_last_minute(conn: sqlite3.Connection) -> int:
     """Number of API calls in the trailing 60 seconds."""
@@ -229,4 +236,25 @@ def actionable_messages_without_drafts(
         LIMIT ?
         """,
         (classification_prompt_version, draft_prompt_version, limit),
+    ).fetchall()
+
+
+def update_draft_status(conn: sqlite3.Connection, gmail_draft_id: str, status: str) -> None:
+    """Update the status of a draft (pending -> sent or rejected)."""
+    conn.execute(
+        "UPDATE drafts SET status = ? WHERE gmail_draft_id = ?",
+        (status, gmail_draft_id)
+    )
+    conn.commit()
+
+def get_pending_drafts(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Fetch drafts that haven't been approved or rejected yet."""
+    return conn.execute(
+        """
+        SELECT d.*, m.from_addr, m.subject as orig_subject
+        FROM drafts d
+        JOIN messages m ON m.id = d.message_id
+        WHERE d.status = 'pending'
+        ORDER BY d.created_at DESC
+        """
     ).fetchall()

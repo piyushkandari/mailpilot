@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mail Pilot Approvals</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
+        .draft { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+        .draft a { text-decoration: none; color: #0366d6; font-weight: bold; }
+        .meta { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Pending Drafts</h1>
+    {% if not drafts %}
+        <p>No drafts pending review.</p>
+    {% else %}
+        {% for d in drafts %}
+            <div class="draft">
+                <a href="/draft/{{ d.gmail_draft_id }}">{{ d.subject }}</a>
+                <div class="meta">To: {{ d.from_addr }} | Created: {{ d.created_at }}</div>
+                <p>{{ d.body[:150] }}...</p>
+            </div>
+        {% endfor %}
+    {% endif %}
+</body>
+</html>
