@@ -49,3 +49,27 @@ CREATE TABLE IF NOT EXISTS api_calls (
 );
 
 CREATE INDEX IF NOT EXISTS idx_api_calls_time ON api_calls(called_at);
+
+
+
+-- One row per drafted reply. Keyed by (message_id, prompt_version) so
+-- rerunning the drafter after a prompt bump creates a fresh row rather than
+-- overwriting history. gmail_draft_id is NULL when create_in_gmail=False
+-- or when creation failed after the LLM call succeeded.
+CREATE TABLE IF NOT EXISTS drafts (
+    message_id      TEXT NOT NULL,
+    thread_id       TEXT NOT NULL,
+    prompt_version  INTEGER NOT NULL,
+    subject         TEXT NOT NULL,
+    body            TEXT NOT NULL,
+    reasoning       TEXT,
+    confidence      REAL NOT NULL,
+    model           TEXT NOT NULL,
+    gmail_draft_id  TEXT,
+    created_at      TEXT NOT NULL,
+    raw_response    TEXT,
+    PRIMARY KEY (message_id, prompt_version),
+    FOREIGN KEY (message_id) REFERENCES messages(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_drafts_thread ON drafts(thread_id);

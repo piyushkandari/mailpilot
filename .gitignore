@@ -23,3 +23,9 @@ mail_pilot.db-shm
 
 data/
 !data/.gitkeep
+
+
+*.db
+*.db-wal
+*.db-shm
+data/

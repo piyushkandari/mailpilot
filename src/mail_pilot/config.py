@@ -26,7 +26,13 @@ GMAIL_TOKEN_PATH = PROJECT_ROOT / os.getenv(
 )
 
 # Phase 0 scope: read-only. Draft/send scopes are added only in Phase 3/6.
-GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+# Phase 3: gmail.compose is required for drafts.create.
+# We request it, but this codebase never calls drafts.send / messages.send.
+# Scope changes invalidate token.json — delete and re-authorize after editing.
+GMAIL_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
+]
 
 # Free-tier primary model: most generous observed limits (~15 RPM / 500 RPD).
 # Keep the model name here so later phases can swap it without hunting.

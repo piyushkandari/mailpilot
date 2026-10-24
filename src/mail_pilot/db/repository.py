@@ -161,3 +161,72 @@ def unclassified_messages(conn: sqlite3.Connection, prompt_version: int,
         """,
         (prompt_version, limit),
     ).fetchall()
+
+
+# ---------- Phase 3: drafts ----------------------------------------------
+
+def get_draft(conn: sqlite3.Connection, message_id: str,
+              prompt_version: int) -> dict | None:
+    row = conn.execute(
+        "SELECT * FROM drafts WHERE message_id=? AND prompt_version=?",
+        (message_id, prompt_version),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def save_draft(conn: sqlite3.Connection, message_id: str, thread_id: str,
+               prompt_version: int, *, subject: str, body: str,
+               reasoning: str, confidence: float, model: str,
+               gmail_draft_id: str | None, raw_response: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO drafts
+            (message_id, thread_id, prompt_version, subject, body, reasoning,
+             confidence, model, gmail_draft_id, created_at, raw_response)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(message_id, prompt_version) DO UPDATE SET
+            subject=excluded.subject,
+            body=excluded.body,
+            reasoning=excluded.reasoning,
+            confidence=excluded.confidence,
+            model=excluded.model,
+            gmail_draft_id=excluded.gmail_draft_id,
+            created_at=excluded.created_at,
+            raw_response=excluded.raw_response
+        """,
+        (message_id, thread_id, prompt_version, subject, body, reasoning,
+         confidence, model, gmail_draft_id, _now_iso(), raw_response),
+    )
+    conn.commit()
+
+def actionable_messages_without_drafts(
+    conn: sqlite3.Connection,
+    classification_prompt_version: int,
+    draft_prompt_version: int,
+    limit: int,
+) -> list[sqlite3.Row]:
+    """Actionable messages that have no draft at this draft_prompt_version.
+
+    Excludes synthetic-* ids: those are Phase 2 fixtures that were inserted
+    into `messages` only to satisfy the classifications FK. They have no
+    Gmail thread behind them, so attempting threads.get on them returns
+    HttpError 400 Invalid id value.
+    """
+    return conn.execute(
+        """
+        SELECT m.*, c.category, c.urgency
+        FROM messages m
+        JOIN classifications c
+            ON c.message_id = m.id
+           AND c.prompt_version = ?
+        LEFT JOIN drafts d
+            ON d.message_id = m.id
+           AND d.prompt_version = ?
+        WHERE c.category = 'actionable'
+          AND d.message_id IS NULL
+          AND m.id NOT LIKE 'synthetic-%'
+        ORDER BY m.internal_date DESC
+        LIMIT ?
+        """,
+        (classification_prompt_version, draft_prompt_version, limit),
+    ).fetchall()
